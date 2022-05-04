@@ -4,6 +4,7 @@ local inRadialMenu = false
 
 local jobIndex = nil
 local vehicleIndex = nil
+local impoundIndex = nil
 
 local DynamicMenuItems = {}
 local FinalMenuItems = {}
@@ -54,6 +55,18 @@ local function RemoveOption(id)
     DynamicMenuItems[id] = nil
 end
 
+local function IsPoliceOrEMS()
+    return (PlayerData.job.isleo or PlayerData.job.name == "ambulance")
+end
+
+local function IsEMS()
+    return PlayerData.job.name == "ambulance"
+end
+
+local function IsDowned()
+    return (PlayerData.metadata["isdead"] or PlayerData.metadata["inlaststand"])
+end
+
 local function SetupJobMenu()
     local JobMenu = {
         id = 'jobinteractions',
@@ -61,7 +74,15 @@ local function SetupJobMenu()
         icon = 'briefcase',
         items = {}
     }
-    if Config.JobInteractions[PlayerData.job.name] and next(Config.JobInteractions[PlayerData.job.name]) then
+    if PlayerData.job.isleo and PlayerData.job.onduty then
+        JobMenu.title = "警察動作"
+        JobMenu.icon = "shield-alt"
+        JobMenu.items = Config.JobInteractions["police"]
+    elseif IsEMS() and PlayerData.job.onduty then
+        JobMenu.title = "EMS動作"
+        JobMenu.icon = "briefcase-medical"
+        JobMenu.items = Config.JobInteractions[PlayerData.job.name]
+    elseif Config.JobInteractions[PlayerData.job.name] and next(Config.JobInteractions[PlayerData.job.name]) and not IsPoliceOrEMS() then
         JobMenu.items = Config.JobInteractions[PlayerData.job.name]
     end
 
@@ -75,10 +96,33 @@ local function SetupJobMenu()
     end
 end
 
+local function SetupDrugMenu()
+    if not PlayerData.job.isleo then
+        local isSelling = exports["qb-drugs"]:cornerselling()
+        local title
+        if isSelling then
+            title = "關閉販毒"
+        else
+            title = "開啟販毒"
+        end
+        local cornersellingItem = {
+            id = 'cornerselling',
+            title = title,
+            icon = 'cannabis',
+            type = 'client',
+            event = 'qb-drugs:client:cornerselling',
+            shouldClose = true
+        }
+        Config.MenuItems[1].items[5] = cornersellingItem
+    else
+        Config.MenuItems[1].items[5] = nil
+    end
+end
+
 local function SetupVehicleMenu()
     local VehicleMenu = {
         id = 'vehicle',
-        title = 'Vehicle',
+        title = '車輛',
         icon = 'car',
         items = {}
     }
@@ -86,32 +130,17 @@ local function SetupVehicleMenu()
     local ped = PlayerPedId()
     local Vehicle = GetVehiclePedIsIn(ped) ~= 0 and GetVehiclePedIsIn(ped) or getNearestVeh()
     if Vehicle ~= 0 then
-        VehicleMenu.items[#VehicleMenu.items+1] = Config.VehicleDoors
-        if Config.EnableExtraMenu then VehicleMenu.items[#VehicleMenu.items+1] = Config.VehicleExtras end
-
         if IsPedInAnyVehicle(ped) then
-            local seatIndex = #VehicleMenu.items+1
-            VehicleMenu.items[seatIndex] = deepcopy(Config.VehicleSeats)
-
-            local seatTable = {
-                [1] = Lang:t("options.driver_seat"),
-                [2] = Lang:t("options.passenger_seat"),
-                [3] = Lang:t("options.rear_left_seat"),
-                [4] = Lang:t("options.rear_right_seat"),
+            local itemIndex = #VehicleMenu.items+1
+            local controlItem = {
+                id = 'vehcontrol',
+                title = '車輛控制',
+                icon = 'car',
+                type = 'client',
+                event = 'vehcontrol:openExternal',
+                shouldClose = true
             }
-
-            local AmountOfSeats = GetVehicleModelNumberOfSeats(GetEntityModel(Vehicle))
-            for i = 1, AmountOfSeats do
-                local newIndex = #VehicleMenu.items[seatIndex].items+1
-                VehicleMenu.items[seatIndex].items[newIndex] = {
-                    id = i - 2,
-                    title = seatTable[i] or Lang:t("options.other_seats"),
-                    icon = 'caret-up',
-                    type = 'client',
-                    event = 'qb-radialmenu:client:ChangeSeat',
-                    shouldClose = false,
-                }
-            end
+            VehicleMenu.items[itemIndex] = controlItem
         end
     end
 
@@ -125,9 +154,32 @@ local function SetupVehicleMenu()
     end
 end
 
+local function SetupImpoundMenu()
+    local impoundMenu = {
+        id = 'impound-request',
+        title = '請求拖吊',
+        icon = 'lock',
+        type = 'client',
+        event = 'police:client:ImpoundVehicleRequestMenu',
+        shouldClose = true
+    }
+    local closestVehicle, distance = QBCore.Functions.GetClosestVehicle()
+    if not IsPedInAnyVehicle(PlayerPedId()) and closestVehicle ~= 0 and distance <= 2.5 and PlayerData.job.isleo and PlayerData.job.onduty then
+        impoundIndex = AddOption(impoundMenu, impoundIndex)
+    else
+        if impoundIndex then
+            RemoveOption(impoundIndex)
+            impoundIndex = nil
+        end
+    end
+end
+
+
 local function SetupSubItems()
     SetupJobMenu()
     SetupVehicleMenu()
+    SetupImpoundMenu()
+    SetupDrugMenu()
 end
 
 local function selectOption(t, t2)
@@ -144,34 +196,63 @@ local function selectOption(t, t2)
     return false
 end
 
-local function IsPoliceOrEMS()
-    return (PlayerData.job.name == "police" or PlayerData.job.name == "ambulance")
-end
-
-local function IsDowned()
-    return (PlayerData.metadata["isdead"] or PlayerData.metadata["inlaststand"])
-end
-
 local function SetupRadialMenu()
     FinalMenuItems = {}
-    if (IsDowned() and IsPoliceOrEMS()) then
-            FinalMenuItems = {
-                [1] = {
-                    id = 'emergencybutton2',
-                    title = Lang:t("options.emergency_button"),
-                    icon = 'exclamation-circle',
-                    type = 'client',
-                    event = 'police:client:SendPoliceEmergencyAlert',
-                    shouldClose = true,
-                },
+    if IsDowned() and PlayerData.job.isleo then
+        FinalMenuItems = {
+            [1] = {
+                id = 'death',
+                title = '10-13A',
+                icon = 'dizzy',
+                type = 'client',
+                event = 'qb-dispatch:client:officerdownA',
+                shouldClose = true
+            },
+            [2] = {
+                id = 'death',
+                title = '10-13B',
+                icon = 'dizzy',
+                type = 'client',
+                event = 'qb-dispatch:client:officerdownB',
+                shouldClose = true
             }
+        }
+    elseif IsDowned() and IsEMS() then
+        FinalMenuItems = {
+            [1] = {
+                id = 'death',
+                title = '10-14A',
+                icon = 'dizzy',
+                type = 'client',
+                event = 'qb-dispatch:client:emsdownA',
+                shouldClose = true
+            },
+            [2] = {
+                id = 'death',
+                title = '10-14B',
+                icon = 'dizzy',
+                type = 'client',
+                event = 'qb-dispatch:client:emsdownB',
+                shouldClose = true
+            }
+        }
+    elseif IsDowned() then
+        FinalMenuItems = {
+            [1] = {
+                id = 'death',
+                title = '呼叫 911',
+                icon = 'dizzy',
+                type = 'server',
+                event = 'hospital:server:civilianAlert',
+                shouldClose = true
+            }
+        }
     else
         SetupSubItems()
         FinalMenuItems = deepcopy(Config.MenuItems)
         for _, v in pairs(DynamicMenuItems) do
             FinalMenuItems[#FinalMenuItems+1] = v
         end
-
     end
 end
 
