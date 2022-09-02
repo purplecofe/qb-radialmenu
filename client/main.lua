@@ -55,26 +55,34 @@ local function RemoveOption(id)
     DynamicMenuItems[id] = nil
 end
 
-local function IsPoliceOrEMS()
-    return (PlayerData.job.isleo or PlayerData.job.name == "ambulance")
+local function IsEMS()
+    return PlayerData.job.type == "ems"
 end
 
-local function IsEMS()
-    return PlayerData.job.name == "ambulance"
+local function IsLEO()
+    return PlayerData.job.type == "leo"
+end
+
+local function IsPoliceOrEMS()
+    return (PlayerData.job.type == "leo" or PlayerData.job.type == "ems")
 end
 
 local function IsDowned()
     return (PlayerData.metadata["isdead"] or PlayerData.metadata["inlaststand"])
 end
 
+local function IsHandCuffed()
+    return PlayerData.metadata["ishandcuffed"]
+end
+
 local function SetupJobMenu()
     local JobMenu = {
         id = 'jobinteractions',
-        title = 'Work',
+        title = '工作',
         icon = 'briefcase',
         items = {}
     }
-    if PlayerData.job.isleo and PlayerData.job.onduty then
+    if IsLEO() and PlayerData.job.onduty then
         JobMenu.title = "警察動作"
         JobMenu.icon = "shield-alt"
         JobMenu.items = Config.JobInteractions["police"]
@@ -97,7 +105,7 @@ local function SetupJobMenu()
 end
 
 local function SetupDrugMenu()
-    if not PlayerData.job.isleo then
+    if not IsLEO() then
         local isSelling = exports["qb-drugs"]:cornerselling()
         local title
         if isSelling then
@@ -164,7 +172,7 @@ local function SetupImpoundMenu()
         shouldClose = true
     }
     local closestVehicle, distance = QBCore.Functions.GetClosestVehicle()
-    if not IsPedInAnyVehicle(PlayerPedId()) and closestVehicle ~= 0 and distance <= 2.5 and PlayerData.job.isleo and PlayerData.job.onduty then
+    if not IsPedInAnyVehicle(PlayerPedId()) and closestVehicle ~= 0 and distance <= 2.5 and IsLEO() and PlayerData.job.onduty then
         impoundIndex = AddOption(impoundMenu, impoundIndex)
     else
         if impoundIndex then
@@ -198,14 +206,15 @@ end
 
 local function SetupRadialMenu()
     FinalMenuItems = {}
-    if IsDowned() and PlayerData.job.isleo then
+
+    if IsDowned() and IsLEO() then
         FinalMenuItems = {
             [1] = {
                 id = 'death',
                 title = '10-13A',
                 icon = 'dizzy',
                 type = 'client',
-                event = 'qb-dispatch:client:officerdownA',
+                event = 'ps-dispatch:client:officerdownA',
                 shouldClose = true
             },
             [2] = {
@@ -213,7 +222,7 @@ local function SetupRadialMenu()
                 title = '10-13B',
                 icon = 'dizzy',
                 type = 'client',
-                event = 'qb-dispatch:client:officerdownB',
+                event = 'ps-dispatch:client:officerdownB',
                 shouldClose = true
             }
         }
@@ -224,7 +233,7 @@ local function SetupRadialMenu()
                 title = '10-14A',
                 icon = 'dizzy',
                 type = 'client',
-                event = 'qb-dispatch:client:emsdownA',
+                event = 'ps-dispatch:client:emsdownA',
                 shouldClose = true
             },
             [2] = {
@@ -232,7 +241,7 @@ local function SetupRadialMenu()
                 title = '10-14B',
                 icon = 'dizzy',
                 type = 'client',
-                event = 'qb-dispatch:client:emsdownB',
+                event = 'ps-dispatch:client:emsdownB',
                 shouldClose = true
             }
         }
@@ -243,6 +252,7 @@ local function SetupRadialMenu()
                 title = '呼叫 911',
                 icon = 'dizzy',
                 type = 'server',
+                -- TODO: 修正 missing event
                 event = 'hospital:server:civilianAlert',
                 shouldClose = true
             }
@@ -281,13 +291,13 @@ end
 -- Command
 
 RegisterCommand('radialmenu', function()
-    if ((IsDowned() and IsPoliceOrEMS()) or not IsDowned()) and not PlayerData.metadata["ishandcuffed"] and not IsPauseMenuActive() and not inRadialMenu then
+    if not IsHandCuffed() and not IsPauseMenuActive() and not inRadialMenu then
         setRadialState(true, true)
         SetCursorLocation(0.5, 0.5)
     end
 end)
 
-RegisterKeyMapping('radialmenu', Lang:t("general.command_description"), 'keyboard', 'F1')
+RegisterKeyMapping('radialmenu', Lang:t("general.command_description"), 'keyboard', 'F3')
 
 -- Events
 
