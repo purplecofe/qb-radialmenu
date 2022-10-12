@@ -418,7 +418,7 @@ Config.JobInteractions = {
     ["ambulance"] = {
         {
             id = 'statuscheck',
-            title = '檢查生命徵象',
+            title = '檢查健康狀況',
             icon = 'heartbeat',
             type = 'client',
             event = 'hospital:client:CheckStatus',
@@ -500,7 +500,7 @@ Config.JobInteractions = {
             shouldClose = true
         }, {
             id = 'checkstatus',
-            title = '檢查狀態',
+            title = '檢查健康狀況',
             icon = 'question',
             type = 'client',
             event = 'police:client:CheckStatus',
