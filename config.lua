@@ -1,6 +1,9 @@
 Config = {}
-
+Config.Keybind = 'F3' -- FiveM Keyboard, this is registered keymapping, so needs changed in keybindings if player already has this mapped.
+Config.Toggle = false -- use toggle mode. False requires hold of key
 Config.EnableExtraMenu = false
+Config.UseWhilstWalking = false -- use whilst walking
+Config.Fliptime = 15000
 
 Config.MenuItems = {
     [1] = {
@@ -42,12 +45,12 @@ Config.MenuItems = {
     [2] = {
         id = 'general',
         title = '一般',
-        icon = 'list-alt',
+        icon = 'rectangle-list',
         items = {
             {
                 id = 'house',
                 title = 'House Interaction',
-                icon = 'home',
+                icon = 'house',
                 items = {
                     {
                         id = 'givehousekey',
@@ -55,16 +58,14 @@ Config.MenuItems = {
                         icon = 'key',
                         type = 'client',
                         event = 'qb-houses:client:giveHouseKey',
-                        shouldClose = true,
-                        items = {}
+                        shouldClose = true
                     }, {
                         id = 'removehousekey',
                         title = 'Remove House Keys',
                         icon = 'key',
                         type = 'client',
                         event = 'qb-houses:client:removeHouseKey',
-                        shouldClose = true,
-                        items = {}
+                        shouldClose = true
                     }, {
                         id = 'togglelock',
                         title = 'Toggle Doorlock',
@@ -75,14 +76,14 @@ Config.MenuItems = {
                     }, {
                         id = 'decoratehouse',
                         title = 'Decorate House',
-                        icon = 'boxes',
+                        icon = 'box',
                         type = 'client',
                         event = 'qb-houses:client:decorate',
                         shouldClose = true
                     }, {
                         id = 'houseLocations',
                         title = 'Interaction Locations',
-                        icon = 'home',
+                        icon = 'house',
                         items = {
                             {
                                 id = 'setstash',
@@ -94,7 +95,7 @@ Config.MenuItems = {
                             }, {
                                 id = 'setoutift',
                                 title = 'Set Wardrobe',
-                                icon = 'tshirt',
+                                icon = 'shirt',
                                 type = 'client',
                                 event = 'qb-houses:client:setLocation',
                                 shouldClose = true
@@ -112,7 +113,7 @@ Config.MenuItems = {
             }, {
                 id = 'clothesmenu',
                 title = '外觀',
-                icon = 'tshirt',
+                icon = 'shirt',
                 items = {
                     {
                         id = 'Hair',
@@ -124,7 +125,7 @@ Config.MenuItems = {
                     }, {
                         id = 'Ear',
                         title = '耳環',
-                        icon = 'deaf',
+                        icon = 'ear-deaf',
                         type = 'client',
                         event = 'qb-radialmenu:ToggleProps',
                         shouldClose = false
@@ -138,14 +139,14 @@ Config.MenuItems = {
                     }, {
                         id = 'Top',
                         title = '外套',
-                        icon = 'tshirt',
+                        icon = 'shirt',
                         type = 'client',
                         event = 'qb-radialmenu:ToggleClothing',
                         shouldClose = false
                     }, {
                         id = 'Shirt',
                         title = '上衣',
-                        icon = 'tshirt',
+                        icon = 'shirt',
                         type = 'client',
                         event = 'qb-radialmenu:ToggleClothing',
                         shouldClose = false
@@ -192,7 +193,7 @@ Config.MenuItems = {
                             }, {
                                 id = 'Mask',
                                 title = '面具',
-                                icon = 'theater-masks',
+                                icon = 'masks-theater',
                                 type = 'client',
                                 event = 'qb-radialmenu:ToggleClothing',
                                 shouldClose = false
@@ -206,7 +207,7 @@ Config.MenuItems = {
                             }, {
                                 id = 'Bag',
                                 title = '背包',
-                                icon = 'shopping-bag',
+                                icon = 'bag-shopping',
                                 type = 'client',
                                 event = 'qb-radialmenu:ToggleClothing',
                                 shouldClose = false
@@ -419,21 +420,21 @@ Config.JobInteractions = {
         {
             id = 'statuscheck',
             title = '檢查健康狀況',
-            icon = 'heartbeat',
+            icon = 'heart-pulse',
             type = 'client',
             event = 'hospital:client:CheckStatus',
             shouldClose = true
         }, {
             id = 'revivep',
             title = '復活',
-            icon = 'user-md',
+            icon = 'user-doctor',
             type = 'client',
             event = 'hospital:client:RevivePlayer',
             shouldClose = true
         }, {
             id = 'treatwounds',
             title = '治療傷口',
-            icon = 'band-aid',
+            icon = 'bandage',
             type = 'client',
             event = 'hospital:client:TreatWounds',
             shouldClose = true
@@ -527,7 +528,7 @@ Config.JobInteractions = {
                 {
                     id = 'spawnpion',
                     title = '三角錐',
-                    icon = 'exclamation-triangle',
+                    icon = 'triangle-exclamation',
                     type = 'client',
                     event = 'police:client:spawnCone',
                     shouldClose = true
