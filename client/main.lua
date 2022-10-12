@@ -8,6 +8,8 @@ local impoundIndex = nil
 
 local DynamicMenuItems = {}
 local FinalMenuItems = {}
+local controlsToToggle = {24,0,1,2, 142, 257, 346} -- if not using toggle
+
 -- Functions
 
 local function deepcopy(orig) -- modified the deep copy function from http://lua-users.org/wiki/CopyTable
@@ -138,6 +140,17 @@ local function SetupVehicleMenu()
     local ped = PlayerPedId()
     local Vehicle = GetVehiclePedIsIn(ped) ~= 0 and GetVehiclePedIsIn(ped) or getNearestVeh()
     if Vehicle ~= 0 then
+        if not IsVehicleOnAllWheels(Vehicle) then
+            VehicleMenu.items[#VehicleMenu.items+1] = {
+                id = 'vehicle-flip',
+                title = 'Flip Vehicle',
+                icon = 'car-burst',
+                type = 'client',
+                event = 'qb-radialmenu:flipVehicle',
+                shouldClose = true
+            }
+        end
+
         if IsPedInAnyVehicle(ped) then
             local itemIndex = #VehicleMenu.items+1
             local controlItem = {
@@ -191,7 +204,7 @@ local function SetupSubItems()
 end
 
 local function selectOption(t, t2)
-    for k, v in pairs(t) do
+    for _, v in pairs(t) do
         if v.items then
             local found, hasAction, val = selectOption(v.items, t2)
             if found then return true, hasAction, val end
@@ -266,22 +279,46 @@ local function SetupRadialMenu()
     end
 end
 
-local function setRadialState(bool, sendMessage, delay)
-    -- Menuitems have to be added only once
+local function controlToggle(bool)
+    for i = 1, #controlsToToggle,1 do
+        if bool then
+            exports['qb-smallresources']:addDisableControls(controlsToToggle[i])
+        else
+            exports['qb-smallresources']:removeDisableControls(controlsToToggle[i])
+        end
+    end
+end
 
-    if bool then
-        TriggerEvent('qb-radialmenu:client:onRadialmenuOpen')
-        SetupRadialMenu()
+
+local function setRadialState(bool, sendMessage, delay)
+        -- Menuitems have to be added only once
+    if Config.UseWhilstWalking then
+        if bool then
+            SetupRadialMenu()
+            PlaySoundFrontend(-1, "NAV", "HUD_AMMO_SHOP_SOUNDSET", 1)
+            controlToggle(true)
+        else
+            controlToggle(false)
+        end
+        SetNuiFocus(bool, bool)
+        SetNuiFocusKeepInput(bool, true)
     else
-        TriggerEvent('qb-radialmenu:client:onRadialmenuClose')
+        if bool then
+            TriggerEvent('qb-radialmenu:client:onRadialmenuOpen')
+            SetupRadialMenu()
+        else
+            TriggerEvent('qb-radialmenu:client:onRadialmenuClose')
+        end
+        SetNuiFocus(bool, bool)
     end
 
-    SetNuiFocus(bool, bool)
     if sendMessage then
         SendNUIMessage({
             action = "ui",
             radial = bool,
-            items = FinalMenuItems
+            items = FinalMenuItems,
+            toggle = Config.Toggle,
+            keybind = Config.Keybind
         })
     end
     if delay then Wait(500) end
@@ -297,7 +334,7 @@ RegisterCommand('radialmenu', function()
     end
 end)
 
-RegisterKeyMapping('radialmenu', Lang:t("general.command_description"), 'keyboard', 'F3')
+RegisterKeyMapping('radialmenu', Lang:t("general.command_description"), 'keyboard', Config.Keybind)
 
 -- Events
 
@@ -416,16 +453,33 @@ RegisterNetEvent('qb-radialmenu:client:ChangeSeat', function(data)
     end
 end)
 
--- NUI Callbacks
-
-RegisterNUICallback('closeRadial', function(data)
-    setRadialState(false, false, data.delay)
+RegisterNetEvent('qb-radialmenu:flipVehicle', function()
+    TriggerEvent('animations:client:EmoteCommandStart', {"mechanic"})
+    QBCore.Functions.Progressbar("pick_grape", Lang:t("progress.flipping_car"), Config.Fliptime, false, true, {
+        disableMovement = true,
+        disableCarMovement = true,
+        disableMouse = false,
+        disableCombat = true,
+    }, {}, {}, {}, function() -- Done
+        local vehicle = getNearestVeh()
+        SetVehicleOnGroundProperly(vehicle)
+        TriggerEvent('animations:client:EmoteCommandStart', {"c"})
+    end, function() -- Cancel
+        QBCore.Functions.Notify(Lang:t("task.cancel_task"), "error")
+        TriggerEvent('animations:client:EmoteCommandStart', {"c"})
+    end)
 end)
 
-RegisterNUICallback('selectItem', function(data)
-    local itemData = data.itemData
-    local found, action, data = selectOption(FinalMenuItems, itemData)
+-- NUI Callbacks
 
+RegisterNUICallback('closeRadial', function(data, cb)
+    setRadialState(false, false, data.delay)
+    cb('ok')
+end)
+
+RegisterNUICallback('selectItem', function(inData, cb)
+    local itemData = inData.itemData
+    local found, action, data = selectOption(FinalMenuItems, itemData)
     if data and found then
         if action then
             action(data)
@@ -439,6 +493,7 @@ RegisterNUICallback('selectItem', function(data)
             TriggerServerEvent('QBCore:CallCommand', data.event, data)
         end
     end
+    cb('ok')
 end)
 
 exports('AddOption', AddOption)

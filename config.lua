@@ -1,6 +1,9 @@
 Config = {}
-
-Config.EnableExtraMenu = false
+Config.Keybind = 'F1' -- FiveM Keyboard, this is registered keymapping, so needs changed in keybindings if player already has this mapped.
+Config.Toggle = false -- use toggle mode. False requires hold of key
+Config.UseWhilstWalking = false -- use whilst walking
+Config.EnableExtraMenu = true
+Config.Fliptime = 15000
 
 Config.MenuItems = {
     [1] = {
@@ -47,7 +50,7 @@ Config.MenuItems = {
             {
                 id = 'house',
                 title = 'House Interaction',
-                icon = 'home',
+                icon = 'house',
                 items = {
                     {
                         id = 'givehousekey',
@@ -55,16 +58,14 @@ Config.MenuItems = {
                         icon = 'key',
                         type = 'client',
                         event = 'qb-houses:client:giveHouseKey',
-                        shouldClose = true,
-                        items = {}
+                        shouldClose = true
                     }, {
                         id = 'removehousekey',
                         title = 'Remove House Keys',
                         icon = 'key',
                         type = 'client',
                         event = 'qb-houses:client:removeHouseKey',
-                        shouldClose = true,
-                        items = {}
+                        shouldClose = true
                     }, {
                         id = 'togglelock',
                         title = 'Toggle Doorlock',
@@ -75,14 +76,14 @@ Config.MenuItems = {
                     }, {
                         id = 'decoratehouse',
                         title = 'Decorate House',
-                        icon = 'boxes',
+                        icon = 'box',
                         type = 'client',
                         event = 'qb-houses:client:decorate',
                         shouldClose = true
                     }, {
                         id = 'houseLocations',
                         title = 'Interaction Locations',
-                        icon = 'home',
+                        icon = 'house',
                         items = {
                             {
                                 id = 'setstash',
@@ -94,7 +95,7 @@ Config.MenuItems = {
                             }, {
                                 id = 'setoutift',
                                 title = 'Set Wardrobe',
-                                icon = 'tshirt',
+                                icon = 'shirt',
                                 type = 'client',
                                 event = 'qb-houses:client:setLocation',
                                 shouldClose = true
